@@ -7,7 +7,7 @@ resolve_caroot() {
   export CAROOT="$caroot"
   # mkcert treats unset TRUST_STORES as "install into every store". Default to
   # java so -install still writes CAROOT material without mutating system/NSS
-  # trust stores (clients install rootCA.pem explicitly — see README).
+  # trust stores (clients install rootCA.pem explicitly — see docs/guide.md).
   export TRUST_STORES="${TRUST_STORES:-java}"
   cert="$caroot/rootCA.pem"
   key="$caroot/rootCA-key.pem"
@@ -18,7 +18,7 @@ resolve_caroot() {
     log "no CA in $caroot — creating (mkcert -install, TRUST_STORES=$TRUST_STORES)"
     mkcert -install
     { [ -r "$cert" ] && [ -r "$key" ]; } || fail "mkcert -install did not produce a CA in $caroot"
-    log "CA created ($caroot) — distribute rootCA.pem to clients (see README)"
+    log "CA created ($caroot) — distribute rootCA.pem to clients (see docs/guide.md)"
   else
     fail "inconsistent CA state in $caroot (only one of rootCA.pem / rootCA-key.pem present)"
   fi

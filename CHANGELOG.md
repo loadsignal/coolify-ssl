@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- README is a short quick start; full reference moved to [docs/guide.md](./docs/guide.md)
+
 ## [0.1.0] - 2026-07-17
 
 ### Added
