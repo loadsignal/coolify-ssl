@@ -4,7 +4,7 @@
 
 Local TLS for [Coolify](https://coolify.io) + Traefik with a persistent [mkcert](https://github.com/FiloSottile/mkcert) CA. Issues a leaf cert, writes Traefik’s file provider, and can sync that leaf to peer hosts over SSH.
 
-**Private LAN / VPN / homelab only** — not a public CA. See [SECURITY.md](./SECURITY.md).
+**Private LAN / VPN only** — not a public CA. See [SECURITY.md](./SECURITY.md).
 
 Image: [`ghcr.io/loadsignal/coolify-ssl:0.1.0`](https://ghcr.io/loadsignal/coolify-ssl) (pin a version; never `:latest`).
 

@@ -24,7 +24,7 @@ It is intended for:
 
 - Private Coolify / Traefik setups on a LAN or VPN
 - Internal `.lan` / `.home.arpa` / similar names without public ACME
-- Developer and homelab trust stores
+- Developer trust stores
 
 It is **not** intended for:
 

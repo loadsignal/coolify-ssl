@@ -2,7 +2,7 @@
 
 Full reference for deploying and operating coolify-ssl. For a short path to a working setup, see the [README](../README.md).
 
-**Private LAN / VPN / homelab only** — not a public CA and not a replacement for Let’s Encrypt. Read [SECURITY.md](../SECURITY.md) before enabling SSH sync or distributing `rootCA.pem`.
+**Private LAN / VPN  only** — not a public CA and not a replacement for Let’s Encrypt. Read [SECURITY.md](../SECURITY.md) before enabling SSH sync or distributing `rootCA.pem`.
 
 Image: [`ghcr.io/loadsignal/coolify-ssl`](https://ghcr.io/loadsignal/coolify-ssl) — pin a version tag (e.g. `0.1.0`), not `:latest`. Published images include provenance/SBOM attestations and are signed with keyless Cosign (verify with `cosign verify`).
 

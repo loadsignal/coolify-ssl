@@ -4,7 +4,7 @@ Thanks for helping improve coolify-ssl.
 
 ## Scope
 
-This project targets **private LAN / VPN / Coolify homelab** TLS with mkcert — not public ACME / Let’s Encrypt.
+This project targets **private LAN / VPN / Coolify ** TLS with mkcert — not public ACME / Let’s Encrypt.
 
 ## Development
 

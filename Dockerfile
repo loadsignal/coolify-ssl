@@ -28,7 +28,7 @@ FROM ${ALPINE_IMAGE}
 ARG VERSION=0.1.0
 
 LABEL org.opencontainers.image.title="coolify-ssl" \
-      org.opencontainers.image.description="Local mkcert TLS for Coolify + Traefik (LAN/VPN/homelab)" \
+      org.opencontainers.image.description="Local mkcert TLS for Coolify + Traefik (LAN/VPN)" \
       org.opencontainers.image.source="https://github.com/loadsignal/coolify-ssl" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.version="${VERSION}"
