@@ -1,0 +1,18 @@
+# Env & local
+*.local
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+
+# SSL artifacts (never commit private material)
+certs/
+*.pem
+*.key
+*.crt
+*.cert
+ssh_known_hosts

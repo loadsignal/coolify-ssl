@@ -1,0 +1,37 @@
+# Build-from-repo Coolify deploy:
+#   Docker Compose Location = docker-compose.coolify.yml
+#   Base Directory          = /   (paths relative to repo root)
+#   Preserve Repository During Deployment = on
+#
+# Domains: SSL_DOMAINS env, or Coolify File Mount → /etc/ssl-gen/domains.txt
+# (see domains.example.txt for format). Leaf SSH sync: CERT_SYNC_HOSTS +
+# CERT_SYNC_SSH_KEY_PATH + single-key volume + seeded known_hosts (SECURITY.md).
+services:
+  coolify-ssl:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: on-failure:5
+    stop_grace_period: 30s
+    environment:
+      CERT_NAME: ${CERT_NAME:-lan}
+      CHECK_INTERVAL_SECONDS: ${CHECK_INTERVAL_SECONDS:-2592000}
+      RENEW_BEFORE_EXPIRY_SECONDS: ${RENEW_BEFORE_EXPIRY_SECONDS:-2592000}
+      SSL_DOMAINS: ${SSL_DOMAINS:-}
+      CERT_SYNC_HOSTS: ${CERT_SYNC_HOSTS:-}
+      CERT_SYNC_SSH_USER: ${CERT_SYNC_SSH_USER:-root}
+      CERT_SYNC_SSH_PORT: ${CERT_SYNC_SSH_PORT:-22}
+      CERT_SYNC_SSH_KEY_PATH: ${CERT_SYNC_SSH_KEY_PATH:-/run/coolify-ssl/sync.key}
+      CERT_SYNC_STRICT: ${CERT_SYNC_STRICT:-1}
+      CERT_SYNC_FAIL_BACKOFF_SECONDS: ${CERT_SYNC_FAIL_BACKOFF_SECONDS:-60}
+      REMOTE_CERT_DIR: ${REMOTE_CERT_DIR:-/data/coolify/proxy/certs}
+      REMOTE_DYNAMIC_DIR: ${REMOTE_DYNAMIC_DIR:-/data/coolify/proxy/dynamic}
+      SSH_KNOWN_HOSTS_FILE: ${SSH_KNOWN_HOSTS_FILE:-/caroot/ssh_known_hosts}
+    volumes:
+      # Literal paths: Coolify's parser drops the suffix after ${VAR:-...}.
+      - /data/coolify/ca:/caroot
+      - /data/coolify/proxy/certs:/certs
+      - /data/coolify/proxy/dynamic:/dynamic
+      # Optional leaf sync — mount ONE key file (replace <uuid>). Do NOT mount the
+      # whole /data/coolify/ssh/keys directory.
+      # - /data/coolify/ssh/keys/ssh_key@<uuid>:/run/coolify-ssl/sync.key:ro
