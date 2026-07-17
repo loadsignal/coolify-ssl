@@ -1,0 +1,39 @@
+# Published image deploy. In Coolify:
+#   1. Paste into a Docker Compose resource on the proxy server.
+#   2. Set SSL_DOMAINS, or add a File Mount at /etc/ssl-gen/domains.txt
+#      (see domains.example.txt for format).
+#   3. For leaf sync: set CERT_SYNC_HOSTS + CERT_SYNC_SSH_KEY_PATH, seed known_hosts,
+#      and mount ONE Coolify SSH key file (not the whole keys directory).
+#      Seed: ssh-keyscan -H <peer> >> /data/coolify/ca/ssh_known_hosts
+#
+# Pin a release tag in production; avoid :latest for reproducible deploys.
+services:
+  coolify-ssl:
+    image: ghcr.io/loadsignal/coolify-ssl:0.1.0
+    # Prefer on-failure over unless-stopped when using CERT_SYNC_STRICT=1 so a
+    # permanent sync misconfig does not restart forever. Backoff still applies.
+    restart: on-failure:5
+    stop_grace_period: 30s
+    environment:
+      CERT_NAME: ${CERT_NAME:-lan}
+      CHECK_INTERVAL_SECONDS: ${CHECK_INTERVAL_SECONDS:-2592000}
+      RENEW_BEFORE_EXPIRY_SECONDS: ${RENEW_BEFORE_EXPIRY_SECONDS:-2592000}
+      SSL_DOMAINS: ${SSL_DOMAINS:-}
+      CERT_SYNC_HOSTS: ${CERT_SYNC_HOSTS:-}
+      CERT_SYNC_SSH_USER: ${CERT_SYNC_SSH_USER:-root}
+      CERT_SYNC_SSH_PORT: ${CERT_SYNC_SSH_PORT:-22}
+      # Container path of the single bind-mounted key (see volumes below).
+      CERT_SYNC_SSH_KEY_PATH: ${CERT_SYNC_SSH_KEY_PATH:-/run/coolify-ssl/sync.key}
+      CERT_SYNC_STRICT: ${CERT_SYNC_STRICT:-1}
+      # Sleep before STRICT exit (default 60) to avoid restart storms against peers.
+      CERT_SYNC_FAIL_BACKOFF_SECONDS: ${CERT_SYNC_FAIL_BACKOFF_SECONDS:-60}
+      REMOTE_CERT_DIR: ${REMOTE_CERT_DIR:-/data/coolify/proxy/certs}
+      REMOTE_DYNAMIC_DIR: ${REMOTE_DYNAMIC_DIR:-/data/coolify/proxy/dynamic}
+      SSH_KNOWN_HOSTS_FILE: ${SSH_KNOWN_HOSTS_FILE:-/caroot/ssh_known_hosts}
+    volumes:
+      - /data/coolify/ca:/caroot
+      - /data/coolify/proxy/certs:/certs
+      - /data/coolify/proxy/dynamic:/dynamic
+      # Optional leaf sync — mount ONE key file (replace <uuid>). Do NOT mount the
+      # whole /data/coolify/ssh/keys directory.
+      # - /data/coolify/ssh/keys/ssh_key@<uuid>:/run/coolify-ssl/sync.key:ro

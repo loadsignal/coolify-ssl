@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ShellCheck + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install shellcheck + mkcert
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck openssl
+          curl -sSL "https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64" -o /tmp/mkcert
+          echo "6d31c65b03972c6dc4a14ab429f2928300518b26503f58723e532d1b0a3bbb52  /tmp/mkcert" | sha256sum -c -
+          sudo install -m 755 /tmp/mkcert /usr/local/bin/mkcert
+          mkcert -version
+
+      - name: ShellCheck
+        run: |
+          shellcheck -x generate-certs.sh
+          shellcheck lib/remote-publish.sh
+          shellcheck -e SC1091,SC2034 tests/*.sh
+          shellcheck tests/traefik-smoke/run.sh
+
+      - name: Unit + integration tests
+        run: sh tests/run.sh
+
+  build-image:
+    name: Docker smoke build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Build image
+        id: build
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          push: false
+          load: ${{ matrix.platform == 'linux/amd64' }}
+          tags: coolify-ssl:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke run (one-shot, amd64 only)
+        if: matrix.platform == 'linux/amd64'
+        run: |
+          mkdir -p /tmp/coolify-ssl-ci/{caroot,certs,dynamic}
+          docker run --rm -d --name coolify-ssl-ci \
+            -e SSL_DOMAINS=coolify.lan,*.tools.lan \
+            -e CHECK_INTERVAL_SECONDS=3600 \
+            -e RENEW_BEFORE_EXPIRY_SECONDS=2592000 \
+            -e CERT_NAME=lan \
+            -v /tmp/coolify-ssl-ci/caroot:/caroot \
+            -v /tmp/coolify-ssl-ci/certs:/certs \
+            -v /tmp/coolify-ssl-ci/dynamic:/dynamic \
+            coolify-ssl:ci
+          for i in $(seq 1 30); do
+            if [ -f /tmp/coolify-ssl-ci/certs/lan.cert ] && [ -f /tmp/coolify-ssl-ci/dynamic/local-certs.yaml ]; then
+              echo "certs ready after ${i}s"
+              docker stop coolify-ssl-ci >/dev/null
+              test -s /tmp/coolify-ssl-ci/certs/lan.cert
+              test -s /tmp/coolify-ssl-ci/certs/lan.key
+              test -L /tmp/coolify-ssl-ci/certs/lan.cert
+              test -L /tmp/coolify-ssl-ci/certs/.leaf
+              grep -q 'lan.cert' /tmp/coolify-ssl-ci/dynamic/local-certs.yaml
+              openssl x509 -in /tmp/coolify-ssl-ci/certs/lan.cert -noout -checkend 0
+              openssl x509 -in /tmp/coolify-ssl-ci/certs/lan.cert -noout -text | grep -F 'coolify.lan'
+              openssl x509 -in /tmp/coolify-ssl-ci/certs/lan.cert -noout -text | grep -F '*.tools.lan'
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "timed out waiting for certs"
+          docker logs coolify-ssl-ci || true
+          docker stop coolify-ssl-ci >/dev/null || true
+          exit 1
+
+      - name: Traefik symlink + renew proof (amd64 only)
+        if: matrix.platform == 'linux/amd64'
+        run: sh tests/traefik-smoke/run.sh
+
+      - name: Trivy image scan (amd64 only)
+        if: matrix.platform == 'linux/amd64'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: coolify-ssl:ci
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          ignore-unfixed: true
+          format: table

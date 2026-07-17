@@ -1,0 +1,14 @@
+# Static HTTP route for the Traefik smoke test (copied into data/dynamic before start).
+http:
+  routers:
+    whoami:
+      rule: "Host(`coolify.lan`)"
+      entryPoints:
+        - websecure
+      service: whoami
+      tls: {}
+  services:
+    whoami:
+      loadBalancer:
+        servers:
+          - url: "http://whoami:80"

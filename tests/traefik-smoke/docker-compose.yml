@@ -1,0 +1,38 @@
+# Traefik file-provider proof for coolify-ssl atomic .leaf layout.
+# Used by tests/traefik-smoke/run.sh (CI). Image must already be tagged coolify-ssl:ci.
+services:
+  coolify-ssl:
+    image: coolify-ssl:ci
+    container_name: coolify-ssl-traefik-smoke
+    environment:
+      CERT_NAME: lan
+      SSL_DOMAINS: ${SSL_DOMAINS:-coolify.lan,*.tools.lan}
+      CHECK_INTERVAL_SECONDS: "3600"
+      RENEW_BEFORE_EXPIRY_SECONDS: "2592000"
+    volumes:
+      - ./data/caroot:/caroot
+      - ./data/certs:/certs
+      - ./data/dynamic:/dynamic
+    restart: "no"
+
+  whoami:
+    image: traefik/whoami:v1.11.0
+    container_name: coolify-ssl-whoami
+
+  traefik:
+    image: traefik:v2.11.29
+    container_name: coolify-ssl-traefik
+    depends_on:
+      - whoami
+      - coolify-ssl
+    command:
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.websecure.address=:443
+      - --log.level=INFO
+      - --accesslog=true
+    ports:
+      - "8443:443"
+    volumes:
+      - ./data/certs:/traefik/certs:ro
+      - ./data/dynamic:/etc/traefik/dynamic:ro

@@ -1,0 +1,24 @@
+# Example SANs — copy/adapt into a Coolify File Mount at /etc/ssl-gen/domains.txt
+# (do not mount this repo file as-is unless these names match your DNS).
+# One name (or IP) per line. `#` starts a comment; blank lines are ignored.
+#
+# Browser rule: `*.lan` is REJECTED (wildcard directly under a TLD).
+#   - Short aliases (<alias>.example.lan): list explicitly.
+#   - Per-server services (<service>.<server>.example.lan): covered by *.<server>.example.lan.
+#
+# Keep this list aligned with your DNS zone. Redeploy coolify-ssl after edits.
+
+# Short aliases
+app.example.lan
+grafana.example.lan
+
+# Canonical hosts
+coolify.example.lan
+tools.example.lan
+
+# Per-server wildcards
+*.coolify.example.lan
+*.tools.example.lan
+
+# Optional LAN IP
+# 10.0.0.4
